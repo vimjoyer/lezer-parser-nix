@@ -6,8 +6,8 @@ import {
   //ContextTracker,
 } from "@lezer/lr"
 import {
-  IndentedStringContent, indentedStringInterpolationStart, indentedStringEnd,
-  StringContent, stringInterpolationStart, stringEnd,
+  IndentedStringContent, indentedStringInterpolationStart, IndentedStringEnd,
+  StringContent, stringInterpolationStart, StringEnd,
 } from "./parser.terms.js"
 
 const space = [
@@ -46,8 +46,8 @@ export const indentedString = new ExternalTokenizer(input => {
         if (i == 0) {
           // end of string
           input.advance(2)
-          if (devMode) console.log(`  49 acceptToken(indentedStringEnd)`);
-          input.acceptToken(indentedStringEnd)
+          if (devMode) console.log(`  49 acceptToken(IndentedStringEnd)`);
+          input.acceptToken(IndentedStringEnd)
           break
         }
         if (input.peek(2) == dollar && input.peek(3) == braceL) {
@@ -99,7 +99,7 @@ export const string = new ExternalTokenizer(input => {
       break
     } else if (next == doublequote) {
       if (i) input.acceptToken(StringContent)
-      else input.acceptToken(stringEnd, 1)
+      else input.acceptToken(StringEnd, 1)
       break
     } else if (next == braceL && afterDollar) {
       if (i == 1) input.acceptToken(stringInterpolationStart, 1)

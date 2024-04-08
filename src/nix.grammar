@@ -7,17 +7,17 @@ expr
   | Lambda { '{' ~markCurlyOpen formals '}' ':' expr }
   | Lambda { '{' ~markCurlyOpen formals '}' '@' Identifier ':' expr }
   | Lambda { Identifier '@' '{' ~markCurlyOpen formals '}' ':' expr }
-  | Assert { _ASSERT expr ';' expr }
-  | With { _WITH expr ';' expr }
-  | Let { _LET bindings _IN expr } // syntax sugar: let a=1; in a -> (rec {a=1;}).a
-  | LetOld { _LET '{' bindings '}' } // old let: let { x = 1; body = x; }
+  | Assert { ASSERT expr ';' expr }
+  | With { WITH expr ';' expr }
+  | Let { LET bindings IN expr } // syntax sugar: let a=1; in a -> (rec {a=1;}).a
+  | LetOld { LET '{' bindings '}' } // old let: let { x = 1; body = x; }
   | expr_if
   }
 
 
 
 expr_if
-  { If { _IF expr _THEN expr _ELSE expr }
+  { If { IF expr THEN expr ELSE expr }
   | expr_op
   }
 
@@ -56,7 +56,7 @@ expr_app
 
 expr_select
   { Select { expr_simple !prec_select '.' attrpath }
-  | SelectOr { expr_simple !prec_select '.' attrpath _OR_KW expr_select }
+  | SelectOr { expr_simple !prec_select '.' attrpath OR_KW expr_select }
   | expr_simple
   }
 
@@ -64,7 +64,7 @@ expr_simple
   { Pos { keyword<"__curPos"> }
   | Var { Identifier }
   | Primop { primop }
-  | Int { integer }
+  | Int { Integer }
   | Float { float }
   | TRUE
   | FALSE
@@ -78,7 +78,7 @@ expr_simple
 
   | String { URI } // note: if noURLLiterals: ParseError, URL literals are disabled
   | Parens { '(' expr ')' }
-  | RecSet { _REC '{' ~markCurlyOpen bindings '}' }
+  | RecSet { REC '{' ~markCurlyOpen bindings '}' }
   | Set { '{'~markCurlyOpen bindings '}' } // TODO not needed ~curlyOpen marker? // Set { "{" ~curlyOpen (attr)* "}" }
   | List { '[' (expr_select (!prec_list expr_select)*)? ']' }
   }
@@ -129,13 +129,13 @@ IndentedStringInterpolation
 @external tokens string from "./tokens" {
   StringContent,
   stringInterpolationStart,
-  stringEnd
+  StringEnd
 }
 
 @external tokens indentedString from "./tokens" { // aka: indented string
   IndentedStringContent,
   indentedStringInterpolationStart,
-  indentedStringEnd
+  IndentedStringEnd
 }
 
 @skip {} {
@@ -145,11 +145,11 @@ IndentedStringInterpolation
     }
 
   ind_string_parts
-    { indentedStringStart (IndentedStringContent | IndentedStringInterpolation)* indentedStringEnd
+    { indentedStringStart (IndentedStringContent | IndentedStringInterpolation)* IndentedStringEnd
     }
 
   string_parts_interpolated
-    { stringStart (StringContent | StringInterpolation)* stringEnd
+    { StringStart (StringContent | StringInterpolation)* StringEnd
     }
 }
 
@@ -171,8 +171,8 @@ bindings
   { _Attrs
     {
       ( Attr { attrpath '=' expr ';' }
-      | AttrInherit { _INHERIT attrs ';' }
-      | AttrInheritFrom { _INHERIT '(' expr ')' attrs ';' } // !!! Should ensure sharing of the expression in $4.
+      | AttrInherit { INHERIT attrs ';' }
+      | AttrInheritFrom { INHERIT '(' expr ')' attrs ';' } // !!! Should ensure sharing of the expression in $4.
       )*
     }
   }
@@ -225,17 +225,17 @@ TRUE { keyword<"true"> }
 FALSE { keyword<"false"> }
 NULL { keyword<"null"> }
 
-_ASSERT { keyword<"assert"> }
-_IF { keyword<"if"> }
-_THEN { keyword<"then"> }
-_ELSE { keyword<"else"> }
+ASSERT { keyword<"assert"> }
+IF { keyword<"if"> }
+THEN { keyword<"then"> }
+ELSE { keyword<"else"> }
 
-_WITH { keyword<"with"> }
-_LET { keyword<"let"> }
-_IN { keyword<"in"> }
-_OR_KW { keyword<"or"> }
-_INHERIT { keyword<"inherit"> }
-_REC { keyword<"rec"> }
+WITH { keyword<"with"> }
+LET { keyword<"let"> }
+IN { keyword<"in"> }
+OR_KW { keyword<"or"> }
+INHERIT { keyword<"inherit"> }
+REC { keyword<"rec"> }
 
 
 
@@ -244,9 +244,9 @@ _REC { keyword<"rec"> }
 // https://discuss.codemirror.net/t/handling-overlapping-tokens/2624
 
 @tokens {
-  integer { std.digit+ }
+  Integer { std.digit+ }
   float   { ((std.digit+ "." std.digit+) | ("." std.digit+)) (("e" | "E") std.digit+)? }
-  @precedence { float, integer, "." }
+  @precedence { float, Integer, "." }
 
   Identifier { identifierChar (identifierChar | std.digit | "-" | "'" )* } // note: nix allows minus in identifiers
   @precedence { Identifier, whitespace }
@@ -257,7 +257,7 @@ _REC { keyword<"rec"> }
   indentedStringStart { "''" }
   indentedStringInterpolationEnd { "}" }
 
-  stringStart { '"' }
+  StringStart { '"' }
   stringInterpolationEnd { "}" }
 
   whitespace { std.whitespace+ }
@@ -281,21 +281,21 @@ _REC { keyword<"rec"> }
   PathLibrary { "<" PathLibraryValue ">" }
   PathLibraryValue { pathContent }
 
-  PathRelative { pathRelative | pathRaw }
+  PathRelative { PathRelativea | PathRaw }
 
-  pathRelative { ("./" | "../") pathContent }
+  PathRelativea { ("./" | "../") pathContent }
   @precedence { PathRelative, "." }
 
-  // pathRaw matches almost anything with a "/"
+  // PathRaw matches almost anything with a "/"
   // in "nix repl", these are interpreted as relative paths
-  pathRaw { pathComponent "/" pathContent }
+  PathRaw { pathComponent "/" pathContent }
   // TODO why does PathRelative overlap with whitespace?
   //@precedence { PathRelative, whitespace }
   @precedence { whitespace, PathRelative }
   @precedence { PathRelative, "." }
   @precedence { Identifier, PathRelative } // TODO reverse?
   //@precedence { PathRelative, Identifier }
-  @precedence { PathRelative, integer }
+  @precedence { PathRelative, Integer }
   @precedence { PathRelative, float }
   @precedence { PathRelative, "-" }
   @precedence { PathRelative, "+" }
